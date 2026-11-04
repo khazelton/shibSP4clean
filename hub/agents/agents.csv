@@ -1,0 +1,5 @@
+# Agent list: the day-to-day half of the hub's agent config (see hub/agents/README.md).
+# One row per agent. Lists are space-separated. Lines starting with # are ignored.
+# Edit, then: ./gen-agents-xml.py --reload
+agent_id,group,allowed_ranges,usernames,owner
+sp4-agent.localtest,basic,172.31.0.20/32,sa1-sp4-agent sa2-sp4-agent sa3-sp4-agent,PoC campus app (Keith)

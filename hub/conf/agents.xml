@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+PoC replacement for conf/sp/agents.xml (Phase 2).
+
+One networked agent, authenticated with HTTP basic + source-address check.
+  id                   agent's agentID (agent.ini [remoting] agentID); also the basic-auth
+                       username because the credentials map key is null.
+  allowedAddressRanges the agent container's fixed IP (compose.yaml).
+  credentials          secret from the poc.agent.secret property, which hub/entrypoint.sh
+                       writes into sp.properties from the AGENT_SECRET env var.
+Decoupling demo (Scott's point): swap the null key for an explicit service-account
+username, or list several under p:usernames, without changing the agentID.
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:c="http://www.springframework.org/schema/c"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+                           http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd"
+       default-init-method="initialize"
+       default-destroy-method="destroy">
+
+    <!-- ============ Agents and their Applications ============ -->
+
+    <!--
+    Agent beans are no longer defined here. They are generated from hub/agents/agents.csv
+    by deploy/gen-agents-xml.py into conf/sp/generated/agents-generated.xml, which the
+    AgentResolverService loads alongside this file (shibboleth.sp.AgentResolverResources,
+    hub/entrypoint.sh). This file keeps only the one-time configuration.
+
+    Identity vs credentials (Phase 4, needs hub nightly 0.0.3-32 or later): each agent's
+    p:usernames lists the service accounts that may authenticate as it. sa1/sa2 live in
+    LDAP and sa3 lives in the htpasswd file. Phase 2 in-config secret form, for reference:
+    p:credentials="#{ {null : '%{poc.agent.secret}'} }"
+    -->
+
+    <!-- ============ RelyingParty Overrides ============ -->
+
+    <util:list id="shibboleth.sp.RelyingPartyOverrides">
+    </util:list>
+
+    <import resource="oidc-credentials.xml" />
+
+</beans>

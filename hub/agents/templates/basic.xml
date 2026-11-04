@@ -1,0 +1,4 @@
+    <!-- ${comment} -->
+    <bean p:id="${id}" parent="shibboleth.sp.Agent"${usernames_attr}
+          p:authenticationMethod="basic"
+          p:allowedAddressRanges="${ranges}" />

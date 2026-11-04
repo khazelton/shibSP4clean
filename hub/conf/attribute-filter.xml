@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+PoC replacement for the host IdP's conf/attribute-filter.xml.
+
+The hub runs the IdP's AttributeFilterService over the attributes it decodes from OIDC
+claims. The stock IdP policy denies "mail" unless a SAML SP's metadata requests it,
+which silently dropped mail from the agent's session. sp.oidc.acceptUnfilteredAttributes
+only rescues attributes that have NO rule at all.
+
+This policy releases the Google-derived set to every Application. Tighten per
+Application (e.g. a Requester condition on the agent/application id) in Phase 3.
+-->
+<AttributeFilterPolicyGroup id="ShibbolethFilterPolicy"
+        xmlns="urn:mace:shibboleth:2.0:afp"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="urn:mace:shibboleth:2.0:afp http://shibboleth.net/schema/idp/shibboleth-afp.xsd">
+
+    <AttributeFilterPolicy id="poc-release-google-claims">
+        <PolicyRequirementRule xsi:type="ANY" />
+        <AttributeRule attributeID="sub"            permitAny="true" />
+        <AttributeRule attributeID="mail"           permitAny="true" />
+        <AttributeRule attributeID="email_verified" permitAny="true" />
+        <AttributeRule attributeID="displayName"    permitAny="true" />
+        <AttributeRule attributeID="givenName"      permitAny="true" />
+        <AttributeRule attributeID="sn"             permitAny="true" />
+        <AttributeRule attributeID="picture"        permitAny="true" />
+    </AttributeFilterPolicy>
+
+</AttributeFilterPolicyGroup>

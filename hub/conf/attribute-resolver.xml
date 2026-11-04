@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+PoC replacement for the host IdP's conf/attribute-resolver.xml.
+
+The hub-only IdP never authenticates users, so the stock resolver's "uid"
+(PrincipalName) definition fails on every login with
+  ResolutionException: Attribute Definition 'uid': provided principal name was empty
+Attributes come from OIDC claim transcoding (conf/attributes/oidc-claim-rules.xml),
+not from this resolver, so it is intentionally empty.
+-->
+<AttributeResolver
+        xmlns="urn:mace:shibboleth:2.0:resolver"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="urn:mace:shibboleth:2.0:resolver http://shibboleth.net/schema/idp/shibboleth-attribute-resolver.xsd">
+
+</AttributeResolver>

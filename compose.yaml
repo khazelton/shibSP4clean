@@ -1,0 +1,61 @@
+# SP v4 hub + agent, PoC config without LDAP or the app.
+#   browser -> https://localhost (agent 172.31.0.20) --basic auth over TLS--> hub.localtest:8443 -> Google OIDC
+# Agent credential: htpasswd (sa3-sp4-agent). Run ./gen-agent-secret.sh --htpasswd sa3-sp4-agent once.
+# Uses host ports 80/443 like the PoC: stop one stack before starting the other.
+
+services:
+  hub:
+    build: ./hub
+    image: sp4clean-hub
+    container_name: sp4clean-hub
+    hostname: hub.localtest
+    environment:
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:?set in .env}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:?set in .env}
+      AGENT_HTPASSWD: /opt/shibboleth-idp/credentials/sp/htpasswd/agents.htpasswd
+    networks:
+      sp4:
+        ipv4_address: 172.31.0.10
+        aliases: [hub.localtest]
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - hub-logs:/opt/shibboleth-idp/logs
+      - hub-tls:/tls-export
+      - ./hub/htpasswd:/opt/shibboleth-idp/credentials/sp/htpasswd:ro
+      - ./hub/agents/generated:/opt/shibboleth-idp/conf/sp/generated:ro
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:8080/idp/status"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+
+  agent:
+    build: ./agent
+    image: sp4clean-agent
+    container_name: sp4clean-agent
+    depends_on:
+      hub:
+        condition: service_healthy
+    networks:
+      sp4:
+        ipv4_address: 172.31.0.20   # hub agents.csv allowed range is this /32
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./agent/conf/shibboleth-sp:/etc/shibboleth-sp:ro
+      - ./agent/conf/httpd:/etc/httpd/conf.d/poc:ro
+      - agent-sessions:/var/cache/shibboleth-sp
+      - hub-tls:/etc/pki/sp4-hub:ro
+
+networks:
+  sp4:
+    ipam:
+      config:
+        - subnet: 172.31.0.0/24
+
+volumes:
+  hub-logs:
+  hub-tls:
+  agent-sessions:

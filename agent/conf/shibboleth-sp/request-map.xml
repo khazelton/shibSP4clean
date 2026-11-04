@@ -1,0 +1,4 @@
+<RequestMap>
+    <!-- Content rules live in Apache config (deploy/agent/conf/httpd/shib4-poc.conf);
+         Apache directives take precedence over this map. Kept for completeness. -->
+</RequestMap>
