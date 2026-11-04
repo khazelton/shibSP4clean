@@ -2,3 +2,4 @@
 .env
 agent/conf/shibboleth-sp/agent.pwd
 hub/htpasswd/*.htpasswd
+*.ldif
