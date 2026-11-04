@@ -35,7 +35,7 @@ if [ "$MODE" = htpasswd ]; then
   { grep -v "^${USERNAME}:" "$HTFILE" || true; printf '%s:%s\n' "$USERNAME" "$HASH"; } > "$TMP"
   chmod 644 "$TMP"   # hashes only; the hub's Jetty user must be able to read it
   mv "$TMP" "$HTFILE"
-  echo "htpasswd entry written for ${USERNAME} in deploy/${HTFILE}"
+  echo "htpasswd entry written for ${USERNAME} in ${HTFILE}"
 else
   if docker compose ps --status running ldap >/dev/null 2>&1 && [ -n "$(docker compose ps -q ldap)" ]; then
     ADMIN_PW=$(grep -E '^LDAP_ADMIN_PASSWORD=' .env | cut -d= -f2- || true)

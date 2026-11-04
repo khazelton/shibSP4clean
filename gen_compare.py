@@ -32,20 +32,27 @@ NOTES = {
     "hub/agents/generated/agents-generated.xml": ("config", 3,
         "Generated from <code>agents.csv</code> by <code>gen-agents-xml.py</code>; carries the same address change. "
         "Not edited by hand."),
-    "compose.yaml": ("rewrite", 4,
+    "gen-agents-xml.py": ("script", 4,
+        "<code>--reload</code> now goes through <code>docker compose exec -T hub</code> instead of the fixed container "
+        "name <code>sp4-hub</code>, so it reaches the hub whatever <code>container_name</code> compose sets "
+        "(here <code>sp4clean-hub</code>). Works unchanged in the PoC."),
+    "gen-agent-secret.sh": ("script", 5,
+        "Message text only: the htpasswd confirmation no longer prints a <code>deploy/</code> prefix, "
+        "which was wrong outside the PoC's layout. Behaviour is unchanged."),
+    "compose.yaml": ("rewrite", 6,
         "Rewritten for the smaller stack: the <code>ldap</code> and <code>app</code> services are removed, the hub "
         "drops its LDAP variables and keeps only <code>AGENT_HTPASSWD</code>, and containers, images, network and "
         "subnet are renamed (<code>sp4clean-*</code>, <code>sp4</code>, <code>172.31.0.0/24</code>). Hub and agent "
         "volumes, ports and healthcheck are unchanged."),
-    "README.md": ("housekeeping", 5,
+    "README.md": ("housekeeping", 7,
         "Different documents. The clean README describes this stack and how it differs from the PoC; the PoC's "
         "<code>deploy/README.md</code> is the full runbook. Shown for completeness, no line-by-line review needed."),
-    ".gitignore": ("housekeeping", 6,
+    ".gitignore": ("housekeeping", 8,
         "Each repo's own ignore list. The PoC's lives at its repo root and prefixes paths with <code>deploy/</code>; "
         "the clean one ignores the same secrets (<code>.env</code>, <code>agent.pwd</code>, <code>*.htpasswd</code>) "
         "plus <code>*.ldif</code>. Shown for completeness."),
 }
-KIND_LABEL = {"config": "Config change", "rewrite": "Rewritten", "housekeeping": "Repo housekeeping"}
+KIND_LABEL = {"config": "Config change", "script": "Script fix", "rewrite": "Rewritten", "housekeeping": "Repo housekeeping"}
 
 def esc(s): return html.escape(s, quote=False)
 
@@ -151,7 +158,7 @@ def render_diff(fid, rows):
 
 def sha(p): return hashlib.sha256(p.read_bytes()).hexdigest()
 
-EXCLUDE = {"gen_compare.py"}   # tooling for this page; no PoC counterpart
+EXCLUDE = {"gen_compare.py", "REPLICATE.md"}   # clean-repo only; no PoC counterpart
 files = [f for f in git(CLEAN, "ls-files").splitlines() if f not in EXCLUDE]
 same, diffs = [], []
 for rel in files:
@@ -218,7 +225,7 @@ same_rows = "".join(
     for r, c, h, n in same)
 
 n_total, n_same, n_diff = len(files), len(same), len(diffs)
-n_cfg = sum(1 for d in diffs if d["kind"] == "config")
+n_cfg = sum(1 for d in diffs if d["kind"] in ("config", "script"))
 
 page = f'''<title>shibSP4clean File Comparison</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -288,6 +295,7 @@ ol.order p {{ color: var(--muted); max-width: 80ch; font-size: 0.92rem; }}
 .chip {{ display: inline-block; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
   padding: 2px 8px; border-radius: 3px; white-space: nowrap; }}
 .chip.config {{ background: var(--chip-cfg); color: var(--chip-cfg-fg); }}
+.chip.script {{ background: var(--accent-weak); color: var(--accent); }}
 .chip.rewrite {{ background: var(--chip-rw); color: var(--chip-rw-fg); }}
 .chip.housekeeping {{ background: var(--chip-hk); color: var(--chip-hk-fg); }}
 .chip.same {{ background: var(--chip-same); color: var(--chip-same-fg); }}
@@ -366,13 +374,13 @@ body.mode-unified .view-split {{ display: none; }}
   <div class="tally" role="group" aria-label="Summary">
     <div><strong>{n_total}</strong><span>files compared</span></div>
     <div><strong>{n_same}</strong><span>byte-identical</span></div>
-    <div><strong>{n_cfg}</strong><span>one-line config changes</span></div>
+    <div><strong>{n_cfg}</strong><span>small config or script changes</span></div>
     <div><strong>{n_diff - n_cfg}</strong><span>rewritten or repo-specific</span></div>
   </div>
 
   <section class="block" aria-labelledby="h-order">
     <h2 id="h-order">What to review</h2>
-    <p>The {n_diff} files that differ, most important first. Items 1–3 are the substantive change: the agent authenticates via htpasswd instead of LDAP, on a different subnet. Item 4 follows from dropping LDAP and the app. Items 5–6 are each repo's own documentation and ignore list.</p>
+    <p>The {n_diff} files that differ, most important first. Items 1–3 are the substantive change: the agent authenticates via htpasswd instead of LDAP, on a different subnet. Items 4–5 are small script fixes so the helpers work outside the PoC's layout. Item 6 follows from dropping LDAP and the app. Items 7–8 are each repo's own documentation and ignore list.</p>
     <ol class="order">{"".join(
         f'<li><div class="oline"><a href="#{fid(d["rel"])}"><code>{esc(d["rel"])}</code></a>{chip(d["kind"])}'
         f'<span class="delta"><span class="m">−{d["minus"]}</span> <span class="p">+{d["plus"]}</span></span></div>'
@@ -410,7 +418,7 @@ body.mode-unified .view-split {{ display: none; }}
   </section>
 
   <footer class="foot">
-    <p>Not compared: gitignored local files that exist only on the build machine (<code>.env</code>, <code>agent/conf/shibboleth-sp/agent.pwd</code>, <code>hub/htpasswd/agents.htpasswd</code>, <code>hub/agents/agents.ldif</code>). The secrets differ between the repos by design. Also left out: <code>gen_compare.py</code>, the script that builds this page.</p>
+    <p>Not compared: gitignored local files that exist only on the build machine (<code>.env</code>, <code>agent/conf/shibboleth-sp/agent.pwd</code>, <code>hub/htpasswd/agents.htpasswd</code>, <code>hub/agents/agents.ldif</code>). The secrets differ between the repos by design. Also left out, as they exist only in this repo: <code>gen_compare.py</code> (builds this page) and <code>REPLICATE.md</code> (the replication guide).</p>
     <p>Verified on hub nightly 0.0.3-35: the clean stack's agent↔hub remoting is OK and a Google login delivers all expected attributes.</p>
   </footer>
 </div>

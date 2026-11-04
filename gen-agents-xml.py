@@ -158,9 +158,11 @@ def report(agents):
 
 
 def reload_hub():
-    cmd = ["docker", "exec", "sp4-hub", "/opt/shibboleth-idp/bin/reload-service.sh",
+    # Address the compose service, not a container name, so this works whatever
+    # container_name compose.yaml sets.
+    cmd = ["docker", "compose", "exec", "-T", "hub", "/opt/shibboleth-idp/bin/reload-service.sh",
            "-u", "http://localhost:8080/idp", "-id", "shibboleth.sp.AgentResolverService"]
-    res = subprocess.run(cmd, capture_output=True, text=True)
+    res = subprocess.run(cmd, capture_output=True, text=True, cwd=HERE)
     out = (res.stdout + res.stderr).strip().splitlines()
     print("reload:", out[-1] if out else f"exit {res.returncode}")
     return res.returncode == 0 and any("reloaded" in l for l in out)
